@@ -1,9 +1,10 @@
-package ua.com.gurskiyy.datastructures.hashMap;
+package ua.com.gurskiyy.datastructures.map;
 
 
+import java.util.Map;
 import java.util.Objects;
 
-public class Node<K,V> {
+public class Node<K,V> implements Map.Entry<K,V> {
     private K key;
     private V value;
     private Node<K,V> next;
