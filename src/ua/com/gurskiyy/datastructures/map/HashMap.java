@@ -28,15 +28,18 @@ public class HashMap<K, V> implements Map<K, V> {
 
     @Override
     public boolean containsKey(Object key) {
-        int index;
         if (key == null) {
-            index = 0;
+            for (Node<K, V> current = array[0]; current != null; current = current.getNext()) {
+                if (null == current.getKey()) {
+                    return true;
+                }
+            }
         } else {
-            index = findIndex(key, array.length);
-        }
-        for (Node current = array[index]; current != null; current = current.getNext()) {
-            if (key == current.getKey()) {
-                return true;
+            int index = findIndex(key);
+            for (Node<K, V> current = array[index]; current != null; current = current.getNext()) {
+                if (key.equals(current.getKey())) {
+                    return true;
+                }
             }
         }
         return false;
@@ -71,11 +74,14 @@ public class HashMap<K, V> implements Map<K, V> {
     @Override
     public V get(Object key) {
         if (key == null) {
-            return getForNullKey();
+            for (Node<K, V> temp = array[0]; temp != null; temp = temp.getNext()) {
+                if (temp.getKey() == null) {
+                    return temp.getValue();
+                }
+            }
         } else {
-            int index = findIndex(key, array.length);
-            Node<K, V> temp;
-            for (temp = array[index]; temp != null; temp = temp.getNext()) {
+            int index = findIndex(key);
+            for (Node<K, V> temp = array[index]; temp != null; temp = temp.getNext()) {
                 if (key.equals(temp.getKey())) {
                     return temp.getValue();
                 }
@@ -90,8 +96,10 @@ public class HashMap<K, V> implements Map<K, V> {
         if (key == null) {
             return putForNullKey(value);
         }
-        int index = findIndex(key, array.length);
-        Node<K, V> newNode = new Node<>(key, value);
+        int index = findIndex(key);
+        Node<K, V> newNode = new Node<>();
+        newNode.setKey(key);
+        newNode.setValue(value);
         if (array[index] == null) {
             array[index] = newNode;
         } else {
@@ -102,8 +110,7 @@ public class HashMap<K, V> implements Map<K, V> {
                     return oldValue;
                 } else if (temp.getNext() == null) {
                     temp.setNext(newNode);
-                    size++;
-                    return null;
+                    break;
                 }
             }
         }
@@ -111,47 +118,85 @@ public class HashMap<K, V> implements Map<K, V> {
         return null;
     }
 
-    @Override
+    private V putForNullKey(V value) {
+        Node<K, V> newNode = new Node<>();
+        newNode.setValue(value);
+        if (array[0] == null) {
+            array[0] = newNode;
+        } else {
+            for (Node<K, V> temp = array[0]; temp != null; temp = temp.getNext()) {
+                if (null == temp.getKey()) {
+                    V oldValue = temp.getValue();
+                    temp.setValue(value);
+                    return oldValue;
+                } else if (temp.getNext() == null) {
+                    temp.setNext(newNode);
+                    break;
+                }
+            }
+        }
+        size++;
+        return null;
+    }
+
     public V remove(Object key) {
         int index;
         if (key == null) {
             return removeForNullKey();
         } else {
-            index = findIndex(key, array.length);
+            index = findIndex(key);
         }
-        Node<K,V> current = array[index];
-        Node<K,V> prev = array[index];
-        if(current.getNext() == null){
-            if(key.equals(current.getKey())){
-                V oldValue = current.getValue();
-                array[index] = null;
-                size--;
-                return oldValue;
-            }else{
-                return null;
-            }
-        }else{
-            while (!key.equals(current.getKey())){
-                if(current.getNext() == null){
-                    return null;
-                }else{
-                    prev = current;
-                    current = current.getNext();
+        Node<K, V> current = array[index];
+        Node<K, V> prev = null;
+        V result;
+        while (current != null) {
+            if (key.equals(current.getKey())) {
+                result = current.getValue();
+                if (prev == null) {
+                    array[index] = current.getNext();
+                } else {
+                    if (current.getNext() != null) {
+                        prev.setNext(current.getNext());
+                    } else {
+                        prev.setNext(null);
+                    }
                 }
-            }
-            if(current.getNext() == null){
-                V oldValue = current.getValue();
-                prev.setNext(null);
+                current = null;
                 size--;
-                return oldValue;
-            }else{
-                V oldValue = current.getValue();
-                prev.setNext(current.getNext());
-                size--;
-                return oldValue;
+                return result;
             }
+            prev = current;
+            current = current.getNext();
         }
+        return null;
     }
+
+    private V removeForNullKey() {
+        Node<K, V> current = array[0];
+        Node<K, V> prev = null;
+        V result;
+        while (current != null) {
+            if (null == current.getKey()) {
+                result = current.getValue();
+                if (prev == null) {
+                    array[0] = current.getNext();
+                } else {
+                    if (current.getNext() != null) {
+                        prev.setNext(current.getNext());
+                    } else {
+                        prev.setNext(null);
+                    }
+                }
+                current = null;
+                size--;
+                return result;
+            }
+            prev = current;
+            current = current.getNext();
+        }
+        return null;
+    }
+
 
     @Override
     public void putAll(Map<? extends K, ? extends V> m) {
@@ -192,7 +237,7 @@ public class HashMap<K, V> implements Map<K, V> {
 
     @Override
     public Collection<V> values() {
-        Collection<V> collection = new HashSet<>();
+        Collection<V> collection = new ArrayList<>();
         for (Node<K, V> anArray : array) {
             for (Node<K, V> temp = anArray; temp != null; temp = temp.getNext()) {
                 collection.add(temp.getValue());
@@ -201,74 +246,18 @@ public class HashMap<K, V> implements Map<K, V> {
         return collection;
     }
 
-    private V putForNullKey(V value) {
-        Node<K, V> newNode = new Node<>(null, value);
-        if (array[0] == null) {
-            array[0] = newNode;
-        } else {
-            for (Node<K, V> temp = array[0]; temp != null; temp = temp.getNext()) {
-                if (null == temp.getKey()) {
-                    V oldValue = temp.getValue();
-                    temp.setValue(value);
-                    return oldValue;
-                } else if (temp.getNext() == null) {
-                    temp.setNext(newNode);
-                    size++;
-                    return null;
-                }
-            }
-        }
-        size++;
-        return null;
-    }
 
-    private V removeForNullKey() {
-        Node<K,V> current = array[0];
-        Node<K,V> prev = array[0];
-        if(current.getNext() == null){
-            if(null == current.getKey()){
-                V oldValue = current.getValue();
-                array[0] = null;
-                size--;
-                return oldValue;
-            }else{
-                return null;
-            }
-        }else{
-            while (null != current.getKey()){
-                if(current.getNext() == null){
-                    return null;
-                }else{
-                    prev = current;
-                    current = current.getNext();
-                }
-            }
-            if(current.getNext() == null){
-                V oldValue = current.getValue();
-                prev.setNext(null);
-                size--;
-                return oldValue;
-            }else{
-                V oldValue = current.getValue();
-                prev.setNext(current.getNext());
-                size--;
-                return oldValue;
-            }
-        }
+    private int findIndex(Object key) {
+        return findIndex(key, array.length);
     }
 
     private int findIndex(Object key, int capacity) {
-        int keyHashCode = Math.abs(key.hashCode());
-        return keyHashCode % capacity;
-    }
-
-    private V getForNullKey() {
-        for (Node<K, V> temp = array[0]; temp != null; temp = temp.getNext()) {
-            if (temp.getKey() == null) {
-                return temp.getValue();
-            }
+        if (key == null) {
+            return 0;
+        } else {
+            int keyHashCode = Math.abs(key.hashCode());
+            return keyHashCode % capacity;
         }
-        return null;
     }
 
     private void resize() {
@@ -280,34 +269,23 @@ public class HashMap<K, V> implements Map<K, V> {
     }
 
     private void transfer(Node<K, V>[] newArray) {
-        int newCapacity = newArray.length;
-        for (Node<K, V> anArray : array) {
-            if (anArray != null) {
-                for (Node<K, V> temp = anArray; temp != null; temp = temp.getNext()) {
-                    Node<K, V> newTemp = new Node<>(null, null);
-                    newTemp.setValue(temp.getValue());
-                    newTemp.setKey(temp.getKey());
-                    if (temp.getKey() == null) {
-                        if (newArray[0] == null) {
-                            newArray[0] = newTemp;
-                        } else {
-                            Node<K, V> current = newArray[0];
-                            while (current.getNext() != null) {
-                                current = current.getNext();
-                            }
-                            current.setNext(newTemp);
-                        }
+        for (Node<K, V> bucket : array) {
+            if (bucket != null) {
+                for (Node<K, V> temp = bucket; temp != null; temp = temp.getNext()) {
+                    K key = temp.getKey();
+                    V value = temp.getValue();
+                    Node<K, V> newNode = new Node<>();
+                    newNode.setValue(value);
+                    newNode.setKey(key);
+                    int index = findIndex(key, newArray.length);
+                    if (newArray[index] == null) {
+                        newArray[index] = newNode;
                     } else {
-                        int index = findIndex(temp.getKey(), newCapacity);
-                        if (newArray[index] == null) {
-                            newArray[index] = newTemp;
-                        } else {
-                            Node<K, V> current = newArray[index];
-                            while (current.getNext() != null) {
-                                current = current.getNext();
-                            }
-                            current.setNext(newTemp);
+                        Node<K, V> current = newArray[index];
+                        while (current.getNext() != null) {
+                            current = current.getNext();
                         }
+                        current.setNext(newNode);
                     }
                 }
             }

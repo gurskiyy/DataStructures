@@ -3,12 +3,13 @@ package ua.com.gurskiyy.datastructures.map;
 import org.junit.Test;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.*;
 
 public class HashMapTest {
-    private HashMap<String, String> hashMap = new HashMap<>(2);
+    private Map<String, String> hashMap = new HashMap<>();
 
     @Test
     public void testSize() {
@@ -164,13 +165,14 @@ public class HashMapTest {
 
     @Test
     public void testResize() {
-        hashMap.put("Mamba", "Java");
-        hashMap.put(null, "King");
-        hashMap.put(null, "java");
-        hashMap.put("gh", "Nata");
-        hashMap.put("gh", "Core");
-        hashMap.put("lol", null);
-        hashMap.put("lol", null);
-        assertEquals(4, hashMap.size());
+        Map<String, String> mapForResize = new HashMap<>(2);
+        mapForResize.put("Mamba", "Java");
+        mapForResize.put(null, "King");
+        mapForResize.put(null, "java");
+        mapForResize.put("gh", "Nata");
+        mapForResize.put("gh", "Core");
+        mapForResize.put("lol", null);
+        mapForResize.put("lol", null);
+        assertEquals(4, mapForResize.size());
     }
 }
